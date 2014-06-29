@@ -1,11 +1,12 @@
-import re
 import fnmatch
-import os
 import json
+import logging
+import os
+import re
 
 import ninja_syntax
 
-NINJA_CONFIG = 'config.ninja'
+NINJA_CONFIG = 'tools/config.ninja'
 
 SOURCES = ['*.cpp']
 
@@ -46,7 +47,7 @@ def walk(root, file_includes=['*'], file_excludes=None, dir_excludes=['.git', '.
       yield path, dirs, files
 
 def get_targets(gypfile_path):
-    print('Parsing rules %s' % gypfile_path)
+    logging.info('Parsing rules %s', gypfile_path)
     with open(gypfile_path, 'r') as gypfile:
       data = json.load(gypfile)
       for target in data.get('targets', []):
@@ -66,7 +67,7 @@ def recursive_parse(root):
       ninja = ninja_syntax.Writer(out)
       ninja.include(NINJA_CONFIG)
       for path, _, files in walk(root, SOURCES + [EXEGYP_FILENAME]):
-        print('Parsing folder %s' % path)
+        logging.info('Parsing folder %s', path)
         if files:
           ninja.newline()
           relpath = clean_path(path.replace(root, ''))
@@ -80,6 +81,7 @@ def recursive_parse(root):
                 target = basename_from_path(relpath)
               infiles = objfiles + ['$lib/' + x for x in dependencies]
               ninja.build(join_path('$bin', target), 'link', infiles)
+              ninja.build(target, 'phony', join_path('$bin', target))
           else:
             # Add a library.
             objfiles = add_objects(ninja, relpath, files)

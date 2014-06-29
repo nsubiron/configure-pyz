@@ -1,14 +1,12 @@
-cxx = g++
-cflags = -Wall -std=c++11
-ldflags = -g -rdynamic
-
-builddir = build
-
 source = source
-
+builddir = build
 bin = bin
 lib = $builddir/lib
 obj = $builddir/obj
+
+cxx = g++
+cflags = -Wall -std=c++11 -I $source
+ldflags = -g -rdynamic
 
 rule cxx
   depfile = $out.d
