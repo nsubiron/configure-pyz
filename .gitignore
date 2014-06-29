@@ -1,3 +1,4 @@
+*.pdf
 *.py[cod]
 bin
 build
