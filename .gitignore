@@ -1,0 +1,4 @@
+*.py[cod]
+bin
+build
+build.ninja

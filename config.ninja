@@ -1,0 +1,24 @@
+cxx = g++
+cflags = -Wall -std=c++11
+ldflags = -g -rdynamic
+
+builddir = build
+
+source = source
+
+bin = bin
+lib = $builddir/lib
+obj = $builddir/obj
+
+rule cxx
+  depfile = $out.d
+  command = $cxx -MMD -MF $out.d $cflags -c $in -o $out
+  description = CC $out
+
+rule ar
+  command = ar crsT $out $in
+  description = AR $out
+
+rule link
+  command = $cxx $ldflags -o $out $in
+  description = LINK $out
