@@ -6,7 +6,7 @@ obj = $builddir/obj
 
 cxx = g++
 cflags = -Wall -std=c++11 -I $source
-ldflags = -g -rdynamic
+ldflags = -g -rdynamic -pthread
 
 rule cxx
   depfile = $out.d

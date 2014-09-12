@@ -75,7 +75,7 @@ def recursive_parse(root):
             # Add executables.
             files.remove(EXEGYP_FILENAME)
             objfiles = add_objects(ninja, relpath, files)
-            gypfile_path = join_path(path, EXEGYP_FILENAME)
+            gypfile_path = os.path.join(path, EXEGYP_FILENAME)
             for target, dependencies in get_targets(gypfile_path):
               if target is None:
                 target = basename_from_path(relpath)
