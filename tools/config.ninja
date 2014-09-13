@@ -6,7 +6,9 @@ obj = $builddir/obj
 
 cxx = g++
 cflags = -Wall -std=c++11 -I $source
-ldflags = -g -rdynamic -pthread
+ldflags = -Wall -rdynamic -pthread
+
+debug_cflags = -ggdb -D_DEBUG
 
 rule cxx
   depfile = $out.d

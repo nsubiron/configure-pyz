@@ -1,3 +1,7 @@
+#!/usr/bin/python
+
+"""Generate ninja files based on a directory tree"""
+
 import fnmatch
 import json
 import logging
@@ -8,7 +12,7 @@ import ninja_syntax
 
 NINJA_CONFIG = 'tools/config.ninja'
 
-SOURCES = ['*.cpp']
+SOURCES = ['*.cpp', '*.cc']
 
 EXEGYP_FILENAME = 'rules.gyp'
 
@@ -62,10 +66,14 @@ def add_objects(ninja, relpath, files):
       objfiles.append(objfile)
     return objfiles
 
-def recursive_parse(root):
+def recursive_parse(root, debug=False):
+    root = os.path.abspath(root)
     with open('build.ninja', 'w+') as out:
       ninja = ninja_syntax.Writer(out)
       ninja.include(NINJA_CONFIG)
+      if debug:
+        ninja.newline()
+        ninja.variable('cflags', '$cflags $debug_cflags')
       for path, _, files in walk(root, SOURCES + [EXEGYP_FILENAME]):
         logging.info('Parsing folder %s', path)
         if files:
@@ -91,6 +99,10 @@ def recursive_parse(root):
 
 if __name__ == '__main__':
 
-    import sys
+    import argparse
 
-    recursive_parse(os.path.abspath(sys.argv[1]))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--debug', '-d', action='store_true', help='Configure with debug flags')
+    parser.add_argument('root', help='Root of the source files directory tree')
+
+    recursive_parse(**vars(parser.parse_args()))
