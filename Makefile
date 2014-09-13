@@ -10,18 +10,22 @@ ifdef DEBUG
 endif
 
 build.ninja:
-	@echo Generating$(DTAG) ninja files ...
+	@echo Generating$(DTAG) ninja files...
 	@python tools/configure.py $(DFLAG) source
 
+codeblocks:
+	@mkdir -p projects
+	@python tools/codeblocks.py
+
 projects: build.ninja
-	@echo Generating projects ...
+	@echo Generating projects...
 	@mkdir -p projects
 	@ninja -t targets | \
 	    python tools/project_generator.py $(DFLAG) $(DEBUG) > \
 	    projects/ninja-cpp11.sublime-project
 
 build: build.ninja
-	@echo Building targets ...
+	@echo Building targets...
 	@ninja
 
 clean:
@@ -46,5 +50,5 @@ build/Doxyfile: tools/Doxyfile
 	    build/Doxyfile
 
 doxygen: build/Doxyfile
-	@echo Building documentation ...
+	@echo Building documentation...
 	@doxygen build/Doxyfile

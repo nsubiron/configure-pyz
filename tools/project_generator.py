@@ -40,7 +40,7 @@ def main(stdin, debug=None):
     working_dir = os.path.abspath('.')
     generator.add_path(working_dir, ['build'])
     if debug is not None:
-      dflag = 'DEBUG=' + debug
+      dflag = ' DEBUG=' + debug
       main_target = debug
       gdb_command = 'gdb --interpreter=mi ./bin/' + debug
       generator.add_settings('sublimegdb_workingdir', working_dir)
@@ -49,15 +49,15 @@ def main(stdin, debug=None):
       main_target = targets[0] if len(targets) == 1 else None
       dflag = ''
     binary_path = os.path.join(working_dir, 'bin')
-    make_all = BuildSystem('make - All', 'make %s build' % dflag, working_dir)
+    make_all = BuildSystem('make - All', 'make%s build' % dflag, working_dir)
     make_all.add_variant('Clean', 'make clean')
-    make_all.add_variant('Projects', 'make %s projects' % dflag)
+    make_all.add_variant('Projects', 'make%s projects' % dflag)
     make_all.add_variant('Documentation', 'make doxygen')
     ninja_all = BuildSystem('ninja - All', 'ninja', working_dir)
     ninja_all.add_variant('Clean', 'ninja -t clean')
     if main_target is not None:
       run_command = os.path.join(binary_path, main_target)
-      make_all.add_variant('Run', 'make %s all && %s' % (dflag, run_command))
+      make_all.add_variant('Run', 'make%s build && %s' % (dflag, run_command))
       ninja_all.add_variant('Run', 'ninja && %s' % run_command)
     generator.add_build_system(make_all)
     generator.add_build_system(ninja_all)
