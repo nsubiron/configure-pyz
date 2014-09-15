@@ -1,54 +1,30 @@
-default: projects build
+default: build
 
-all: projects build graph doxygen
+.PHONY: configure projects doxygen
 
-.PHONY: build.ninja doxygen
+CONFIG = python tools/configure.py -f tools/settings.json
 
-ifdef DEBUG
-  DFLAG = -d
-  DTAG = " DEBUG"
-endif
+configure:
+	@echo Configure...
+	@$(CONFIG) --ninja
 
-build.ninja:
-	@echo Generating$(DTAG) ninja files...
-	@python tools/configure.py $(DFLAG) source
+projects:
+	@echo Configure...
+	@$(CONFIG) --sublime
 
-codeblocks:
-	@mkdir -p projects
-	@python tools/codeblocks.py
-
-projects: build.ninja
-	@echo Generating projects...
-	@mkdir -p projects
-	@ninja -t targets | \
-	    python tools/project_generator.py $(DFLAG) $(DEBUG) > \
-	    projects/ninja-cpp11.sublime-project
-
-build: build.ninja
+build: configure
 	@echo Building targets...
 	@ninja
+
+all: projects
+	@echo Building targets...
+	@ninja all doxygen
 
 clean:
 	@ninja -t clean
 
-clean-all:
-	@rm -f -R bin
-	@rm -f -R build
-	@rm -f -R projects
-	@rm -f graph.pdf
-	@rm -f build.ninja
-
-graph:
+graph: configure
 	@ninja -t graph | dot -Tpdf -ograph.pdf
 
-build/Doxyfile: tools/Doxyfile
-	@mkdir -p build
-	@cat tools/Doxyfile | \
-	    sed s/$$\{project_name\}/\"Ninja\ C++11\"/ | \
-	    sed s/$$\{input_dir\}/source/ | \
-	    sed s/$$\{output_dir\}/build/ > \
-	    build/Doxyfile
-
-doxygen: build/Doxyfile
-	@echo Building documentation...
-	@doxygen build/Doxyfile
+doxygen: configure
+	@ninja doxygen

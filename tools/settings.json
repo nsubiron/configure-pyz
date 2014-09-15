@@ -1,0 +1,54 @@
+{
+  "variables": {
+    "project_name":   "Ninja C++11",
+
+    "builddir":       "build",
+    "source":         "source",
+    "projectsdir":    "projects",
+
+    "rules_filename": "rules.gyp",
+    "rootlib":        "root",
+
+    "doxyfile":       "tools/Doxyfile",
+
+    "shell":          "sh -c"
+  },
+
+  "compiler": {
+    "cxx":            "g++",
+    "cflags":         ["-Wall", "-std=c++11"],
+    "lflags":         ["-Wall", "-rdynamic", "-pthread"],
+    "includes":       ["$source"],
+    "defines":        []
+  },
+
+  "configurations": [
+    {
+      "name": "release",
+
+      "bin":  "bin",
+      "lib":  "$builddir/lib_release",
+      "obj":  "$builddir/obj_release"
+    },
+    {
+      "name": "debug",
+
+      "bin":  "$builddir/bin_debug",
+      "lib":  "$builddir/lib_debug",
+      "obj":  "$builddir/obj_debug",
+
+      "cflags":  ["-ggdb"],
+      "defines": ["_DEBUG"]
+    }
+  ],
+
+  "target_defaults": {
+    "type":         "static_library",
+    "dependencies": [],
+    "defines":      [],
+    "include_dirs": [],
+    "sources":      ["*.cpp", "*.cc"],
+    "headers":      ["*.h"],
+    "unused":       []
+  }
+}
