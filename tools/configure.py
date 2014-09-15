@@ -15,10 +15,17 @@ def critical_error(message, *args):
     logging.critical(message, *args)
     sys.exit(1)
 
+def remove_comments(string):
+    """Remove C comments from string. See http://stackoverflow.com/a/18381470"""
+    pattern = r'(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)'
+    regex = re.compile(pattern, re.MULTILINE|re.DOTALL)
+    replacer = lambda match: match.group(1) if match.group(2) is None else ''
+    return regex.sub(replacer, string)
+
 def load_json(filepath):
     logging.debug('Loading file %s', filepath)
     with open(filepath, 'r') as datafile:
-      return json.load(datafile)
+      return json.loads(remove_comments(datafile.read()))
 
 class Settings(object):
     __DATA = None
