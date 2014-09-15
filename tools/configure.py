@@ -110,8 +110,8 @@ class Configuration(object):
 class Compiler(object):
     @staticmethod
     def get_compiler_flags(data):
-        cflags = data.get('cflags', [])
-        cflags += ['-I ' + x for x in data.get('includes', [])]
+        cflags = list(data.get('cflags', []))
+        cflags += ['-I' + x for x in data.get('includes', [])]
         cflags += ['-D' + x for x in data.get('defines', [])]
         return ' '.join(cflags)
 
@@ -189,6 +189,10 @@ def main():
         '--sublime',
         action='store_true',
         help='generate Sublime Text project file')
+    argparser.add_argument(
+        '--codeblocks',
+        action='store_true',
+        help='generate CodeBlocks project files (experimental)')
     args = argparser.parse_args()
 
     loglevel = logging.DEBUG if args.debug else logging.WARNING
@@ -201,7 +205,7 @@ def main():
     if not os.access(SETTINGS_FILE, os.R_OK):
       critical_error('Cannot read settings file "%s"', SETTINGS_FILE)
 
-    if args.targets or args.sublime:
+    if args.targets or args.sublime or args.codeblocks:
       mkdir_p(Settings.get('projectsdir'))
 
     targets = [x for x in iterate_targets(Settings.get('source'))]
@@ -220,6 +224,10 @@ def main():
       if args.sublime:
         import sublime
         sublime.generate(build_targets, Settings)
+
+      if args.codeblocks:
+        import codeblocks
+        codeblocks.generate(targets, Compiler)
 
 
 if __name__ == '__main__':

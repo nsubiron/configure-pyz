@@ -85,8 +85,6 @@ def generate(targets, variables, compiler, output_dir):
       for config in compiler.get_configurations():
         ninja.open_configuration(config.name, config.bin, config.lib, config.obj)
         for target in targets:
-          if not target['sources']:
-            logging.warning('Target ignored: no sources found')
           target_type = target['type']
           if target_type == 'executable':
             btarget = ninja.add_executable(target, config.cflags, config.lflags)

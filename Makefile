@@ -12,6 +12,10 @@ projects:
 	@echo Configure...
 	@$(CONFIG) --sublime
 
+codeblocks:
+	@echo Configure...
+	@$(CONFIG) --codeblocks
+
 build: configure
 	@echo Building targets...
 	@ninja
