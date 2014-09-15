@@ -1,27 +1,22 @@
 default: build
 
-.PHONY: configure projects doxygen
+.PHONY: configure sublime doxygen
 
 CONFIG = python tools/configure.py -f tools/settings.json
 
 configure:
-	@echo Configure...
 	@$(CONFIG) --ninja
 
-projects:
-	@echo Configure...
+sublime:
 	@$(CONFIG) --sublime
 
 codeblocks:
-	@echo Configure...
 	@$(CONFIG) --codeblocks
 
 build: configure
-	@echo Building targets...
 	@ninja
 
-all: projects
-	@echo Building targets...
+all: sublime
 	@ninja all doxygen
 
 clean:

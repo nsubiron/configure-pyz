@@ -72,7 +72,7 @@ class Ninja(object):
     def _add_object_file(self, source, cflags=None):
         out = '$obj/%s.o' % os.path.splitext(source)[0]
         variables = {'cflags': '$cflags ' + cflags} if cflags else None
-        self._writer.build(out, 'cxx', '$source/' + source, variables=variables)
+        self._writer.build(out, 'cxx', '$sourcedir/' + source, variables=variables)
         return out
 
 

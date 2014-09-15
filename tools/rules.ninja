@@ -18,6 +18,6 @@ rule doxygen
 rule sed
   command = $shell "sed $
       -e 's/\$$project_name/\"$project_name\"/' $
-      -e 's/\$$source/$source/' $
+      -e 's/\$$sourcedir/$sourcedir/' $
       -e 's/\$$builddir/$builddir/' $in > $out"
   description = SED $out

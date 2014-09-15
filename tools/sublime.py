@@ -52,8 +52,9 @@ def generate(build_targets, settings):
     working_dir = Path.join('${project_path}', relpath)
 
     make_all = BuildSystem('make - All', 'make build', working_dir)
+    make_all.add_variant('All', 'make all')
     make_all.add_variant('Clean', 'make clean')
-    make_all.add_variant('Projects', 'make projects')
+    make_all.add_variant('Project', 'make sublime')
     make_all.add_variant('Doxygen', 'make doxygen')
     ninja_all = BuildSystem('ninja - All', 'ninja', working_dir)
     ninja_all.add_variant('Clean', 'ninja -t clean')

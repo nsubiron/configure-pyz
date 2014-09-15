@@ -9,7 +9,8 @@ import os
 import re
 import sys
 
-SETTINGS_FILE = os.path.join(os.path.dirname(__file__), 'settings.json')
+def print_out(message, prefix=os.path.basename(__file__)):
+    print('%s: %s' % (prefix, message))
 
 def critical_error(message, *args):
     logging.critical(message, *args)
@@ -22,19 +23,37 @@ def remove_comments(string):
     replacer = lambda match: match.group(1) if match.group(2) is None else ''
     return regex.sub(replacer, string)
 
+def upper_first(string):
+    return string[0].upper() + string[1:] if string else ''
+
 def load_json(filepath):
-    logging.debug('Loading file %s', filepath)
     with open(filepath, 'r') as datafile:
-      return json.loads(remove_comments(datafile.read()))
+      try:
+        return json.loads(remove_comments(datafile.read()))
+      except Exception as exception:
+        critical_error('Error parsing file %s\n%s', filepath, exception)
+
+def mkdir_p(path):
+    if not os.path.isdir(path):
+      os.makedirs(path)
+
+def walk(root):
+    """Wrapper around os.walk"""
+    exclude_dirs = ['.git', '.hg', '.svn']
+    for path, dirs, files in os.walk(root):
+      dirs[:] = [d for d in dirs if not d in exclude_dirs]
+      yield path, files
 
 class Settings(object):
     __DATA = None
 
     @staticmethod
+    def load(filepath):
+        Settings.__DATA = {'variables': {}}
+        Settings.__DATA.update(load_json(filepath))
+
+    @staticmethod
     def get(key):
-        if Settings.__DATA is None:
-          Settings.__DATA = {'variables': {}}
-          Settings.__DATA.update(load_json(SETTINGS_FILE))
         if key not in Settings.__DATA:
           if key in Settings.__DATA['variables']:
             return Settings.__DATA['variables'][key]
@@ -49,7 +68,7 @@ class Settings(object):
 
 
 class Path(object):
-    """Special methods to handle paths within targets"""
+    """Static methods to handle paths"""
 
     @staticmethod
     def clean(path):
@@ -72,7 +91,7 @@ class Path(object):
 
 
 class Target(object):
-    """Build target"""
+    """Build target from source directory tree"""
 
     def __init__(self, path, files, data=None):
         self.path = path
@@ -95,6 +114,8 @@ class Target(object):
 
 
 class Configuration(object):
+    """Compiler configuration in settings file"""
+
     def __init__(self, data):
         if 'name' not in data:
           critical_error('Missing name of configuration in settings file')
@@ -108,6 +129,22 @@ class Configuration(object):
 
 
 class Compiler(object):
+    """Compiler settings in settings files"""
+
+    def __init__(self, settings):
+        raw = settings.get('configurations')
+        self._configurations = [Configuration(x) for x in raw]
+        cdata = settings.get('compiler')
+        self._variables = {'cxx': cdata['cxx']}
+        self._variables['cflags'] = Compiler.get_compiler_flags(cdata)
+        self._variables['lflags'] = Compiler.get_linker_flags(cdata)
+
+    def get_configurations(self):
+        return self._configurations
+
+    def get_global_variables(self):
+        return self._variables
+
     @staticmethod
     def get_compiler_flags(data):
         cflags = list(data.get('cflags', []))
@@ -119,37 +156,26 @@ class Compiler(object):
     def get_linker_flags(data):
         return ' '.join(data.get('lflags', []))
 
-    @staticmethod
-    def get_configurations():
-        return [Configuration(x) for x in Settings.get('configurations')]
 
-    @staticmethod
-    def get_global_variables():
-        cdata = Settings.get('compiler')
-        data = {'cxx': cdata['cxx']}
-        data['cflags'] = Compiler.get_compiler_flags(cdata)
-        data['lflags'] = Compiler.get_linker_flags(cdata)
-        return data
+class ArgumentParser(argparse.ArgumentParser):
+    def __init__(self, *args, **kwargs):
+        self.command_help = {}
+        super(ArgumentParser, self).__init__(*args, **kwargs)
 
-def mkdir_p(path):
-    if not os.path.isdir(path):
-      os.makedirs(path)
+    def add_argument(self, *args, **kwargs):
+        if 'help' in kwargs:
+          self.command_help[args[0]] = upper_first(kwargs['help']) + '.'
+        super(ArgumentParser, self).add_argument(*args, **kwargs)
 
-def walk(root):
-    """Wrapper around os.walk"""
-    exclude_dirs = ['.git', '.hg', '.svn']
-    for path, dirs, files in os.walk(root):
-      dirs[:] = [d for d in dirs if not d in exclude_dirs]
-      yield path, files
 
 def iterate_targets(root):
     """Iterate over the targets generated based on root directory tree"""
     root = os.path.abspath(root)
-    logging.debug('root=%s', root)
+    logging.info('sourcedir=%s', root)
     rules_filename = Settings.get('rules_filename')
     for path, files in walk(root):
       relpath = Path.clean(path.replace(root, ''))
-      logging.info('Parsing folder %s...', path)
+      logging.info('Parsing folder: $sourcedir/%s', relpath)
       if not files:
         logging.debug('No files found')
       elif rules_filename in files:
@@ -166,7 +192,7 @@ def iterate_targets(root):
         yield Target(relpath, files)
 
 def main():
-    argparser = argparse.ArgumentParser(description=__doc__)
+    argparser = ArgumentParser(description=__doc__)
     argparser.add_argument(
         '--debug', '-d',
         action='store_true',
@@ -175,7 +201,7 @@ def main():
         '-f',
         metavar='SETTINGS_FILE',
         dest='settings_file',
-        default=None,
+        default=os.path.join(os.path.dirname(__file__), 'settings.json'),
         help='input settings')
     argparser.add_argument(
         '--targets',
@@ -195,39 +221,58 @@ def main():
         help='generate CodeBlocks project files (experimental)')
     args = argparser.parse_args()
 
+    action_count = sum([args.targets, args.ninja, args.sublime, args.codeblocks])
+
+    if action_count == 0:
+      print_out('%s: Nothing to be done.' % os.path.basename(__file__))
+      return
+
     loglevel = logging.DEBUG if args.debug else logging.WARNING
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
 
-    if args.settings_file is not None:
-      global SETTINGS_FILE
-      SETTINGS_FILE = args.settings_file
+    builtin_open = __builtins__.open
+    def open_hook(*args, **kwargs):
+        logging.debug('Open file: %s', args[0])
+        try:
+          return builtin_open(*args, **kwargs)
+        except Exception as exception:
+          critical_error(exception)
+    __builtins__.open = open_hook
 
-    if not os.access(SETTINGS_FILE, os.R_OK):
-      critical_error('Cannot read settings file "%s"', SETTINGS_FILE)
+    Settings.load(args.settings_file)
 
     if args.targets or args.sublime or args.codeblocks:
       mkdir_p(Settings.get('projectsdir'))
 
-    targets = [x for x in iterate_targets(Settings.get('source'))]
+    targets = [x for x in iterate_targets(Settings.get('sourcedir'))]
+    logging.info('%i targets found', len(targets))
 
     if args.targets:
+      print_out(argparser.command_help['--targets'])
       data = {'targets': [x.raw for x in targets]}
       targets_file = os.path.join(Settings.get('projectsdir'), 'targets.json')
       with open(targets_file, 'w+') as out:
         out.write(json.dumps(data, indent=2))
+      if action_count == 1:
+        return
+
+    compiler = Compiler(Settings)
 
     if args.ninja or args.sublime:
+      print_out(argparser.command_help['--ninja'])
       import ninja
       variables = Settings.get('variables')
-      build_targets = ninja.generate(targets, variables, Compiler, '.')
+      build_targets = ninja.generate(targets, variables, compiler, '.')
 
       if args.sublime:
+        print_out(argparser.command_help['--sublime'])
         import sublime
         sublime.generate(build_targets, Settings)
 
-      if args.codeblocks:
-        import codeblocks
-        codeblocks.generate(targets, Compiler)
+    if args.codeblocks:
+      print_out(argparser.command_help['--codeblocks'])
+      import codeblocks
+      codeblocks.generate(targets, Settings, compiler)
 
 
 if __name__ == '__main__':

@@ -5,15 +5,26 @@ import platform
 import xml.dom.minidom as minidom
 import xml.etree.cElementTree as ElementTree
 
-from configure import Path, Settings
+from configure import Path
 
 EXECUTABLE_EXT = '.exe' if platform.system().lower() == 'windows' else ''
 
-def rpath(path, start=Settings.get('projectsdir')):
-    return Path.clean(os.path.relpath(Settings.expand_variables(path), start))
+class CodeBlocks(object):
+    """Helper class"""
 
-def join_path(*args):
-    return rpath(os.path.join(*args))
+    def __init__(self, settings, compiler):
+        self._settings = settings
+        self.compiler_name = settings.get('codeblocks_compiler_name')
+        self.projectsdir = settings.get('projectsdir')
+        self.configurations = compiler.get_configurations()
+        cvars = compiler.get_global_variables()
+        self.cflags = cvars['cflags']
+        self.lflags = cvars['lflags']
+
+    def makepath(self, *args):
+        path = self._settings.expand_variables(os.path.join(*args))
+        return Path.clean(os.path.relpath(path, self.projectsdir))
+
 
 def subelement(name, parent, dictionary={}):
     subelm = ElementTree.SubElement(parent, name)
@@ -81,71 +92,65 @@ class CodeBlocksProject(XmlFile):
         subelement('Unit', self.project, {'filename': filename})
 
 
-def create_library(target, cflags, configurations):
+def create_base_project(target, codeblocks):
+    project = CodeBlocksProject(target['target_name'], codeblocks.compiler_name)
+    for name in ['builddir', 'sourcedir']:
+      project.add_variable(name, codeblocks.makepath('$' + name))
+    for filename in target['sources'] + target['headers']:
+      project.add_file(codeblocks.makepath('$sourcedir', filename))
+    return project
+
+def create_library(target, codeblocks):
+    project = create_base_project(target, codeblocks)
     title = target['target_name']
-    project = CodeBlocksProject(title, compiler=COMPILER)
-    for config in configurations:
+    for config in codeblocks.configurations:
       build_target = project.add_target(title + ' - ' + config.name)
-      outlib = join_path(config.lib, title)
+      outlib = codeblocks.makepath(config.lib, title)
       output = {'output': outlib}
       output['prefix_auto'] = '0'
       output['extension_auto'] = '1'
       build_target.add_option(output)
       build_target.add_option({'working_dir': ''})
-      build_target.add_option({'object_output': rpath(config.obj)})
+      build_target.add_option({'object_output': codeblocks.makepath(config.obj)})
       build_target.add_option({'type': '2'})
-      build_target.add_option({'compiler': COMPILER})
+      build_target.add_option({'compiler': codeblocks.compiler_name})
       build_target.add_option({'createDefFile': '1'})
-      build_target.add_compiler([cflags, config.cflags])
-    for item in ['builddir', 'source']:
-      project.add_variable(item, rpath(Settings.get(item)))
-    for filename in target['sources'] + target['headers']:
-      project.add_file(join_path(Settings.get('source'), filename))
+      build_target.add_compiler([codeblocks.cflags, config.cflags])
     return project
 
-def create_executable(target, cflags, lflags, configurations):
+def create_executable(target, codeblocks):
+    project = create_base_project(target, codeblocks)
     title = target['target_name']
-    project = CodeBlocksProject(title, compiler=COMPILER)
-    for config in configurations:
+    for config in codeblocks.configurations:
       build_target = project.add_target(title + ' - ' + config.name)
-      outbin = join_path(config.bin, title) + EXECUTABLE_EXT
+      outbin = codeblocks.makepath(config.bin, title) + EXECUTABLE_EXT
       output = {'output': outbin}
       output['prefix_auto'] = '0'
       output['extension_auto'] = '1'
       build_target.add_option(output)
-      build_target.add_option({'working_dir': rpath(config.bin)})
-      build_target.add_option({'object_output': rpath(config.obj)})
+      build_target.add_option({'working_dir': codeblocks.makepath(config.bin)})
+      build_target.add_option({'object_output': codeblocks.makepath(config.obj)})
       build_target.add_option({'type': '1'})
-      build_target.add_option({'compiler': COMPILER})
-      build_target.add_compiler([cflags, config.cflags])
-      libs = [join_path(config.lib, x) for x in target['dependencies']]
-      build_target.add_linker([lflags, config.lflags], libs)
-    for item in ['builddir', 'source']:
-      project.add_variable(item, rpath(Settings.get(item)))
-    for filename in target['sources'] + target['headers']:
-      project.add_file(join_path(Settings.get('source'), filename))
+      build_target.add_option({'compiler': codeblocks.compiler_name})
+      build_target.add_compiler([codeblocks.cflags, config.cflags])
+      libs = [codeblocks.makepath(config.lib, x) for x in target['dependencies']]
+      build_target.add_linker([codeblocks.lflags, config.lflags], libs)
     return project
 
-def generate(targets, compiler):
-    global COMPILER
-    COMPILER = Settings.get('codeblocks_compiler_name')
-    projectsdir = Settings.get('projectsdir')
+def generate(targets, settings, compiler):
+    codeblocks = CodeBlocks(settings, compiler)
     workspace = CodeBlocksWorkspace('all')
-    configurations = compiler.get_configurations()
-    cvars = compiler.get_global_variables()
-    cflags = cvars['cflags']
-    lflags = cvars['lflags']
     for target in targets:
       target_type = target['type']
       if target_type == 'executable':
-        project = create_executable(target, cflags, lflags, configurations)
+        project = create_executable(target, codeblocks)
       elif target_type == 'static_library':
-        project = create_library(target, cflags, configurations)
+        project = create_library(target, codeblocks)
       else:
         logging.warning('Target ignored: type "%s" not implemented', target_type)
         continue
       workspace.add_project(project.basename)
-      with open(os.path.join(projectsdir, project.basename), 'w+') as out:
+      with open(os.path.join(codeblocks.projectsdir, project.basename), 'w+') as out:
         out.write(project.tostring())
-    with open(os.path.join(projectsdir, workspace.basename), 'w+') as out:
+    with open(os.path.join(codeblocks.projectsdir, workspace.basename), 'w+') as out:
       out.write(workspace.tostring())
