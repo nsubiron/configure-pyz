@@ -9,6 +9,11 @@ import os
 import re
 import sys
 
+if sys.version_info[0] != 2:
+  STRING_TYPES = (str,)
+else:
+  STRING_TYPES = (str, unicode)
+
 def print_out(message, prefix=os.path.basename(__file__)):
     print('%s: %s' % (prefix, message))
 
@@ -61,10 +66,15 @@ class Settings(object):
         return Settings.__DATA[key]
 
     @staticmethod
-    def expand_variables(string):
-        for key, value in Settings.get('variables').items():
-          string = re.sub(r'(\$\{?%s\}?)' % key, value, string)
-        return string
+    def expand_variables(obj):
+        if isinstance(obj, STRING_TYPES):
+          for key, value in Settings.get('variables').items():
+            obj = re.sub(r'(\$\{?%s\}?)' % key, value, obj)
+          return obj
+        elif isinstance(obj, list):
+          return [Settings.expand_variables(x) for x in obj]
+        else:
+          critical_error('Invalid object %s', type(obj))
 
 
 class Path(object):
@@ -81,8 +91,9 @@ class Path(object):
 
     @staticmethod
     def target_name(path):
-        path = Path.clean(path)
-        return Settings.get('rootlib') if not path else path.replace('/', '_')
+        if not path:
+          return Settings.get('root_target_name')
+        return Path.clean(path).replace('/', '_')
 
     @staticmethod
     def expand_patterns(patterns, path, files):
@@ -172,14 +183,14 @@ def iterate_targets(root):
     """Iterate over the targets generated based on root directory tree"""
     root = os.path.abspath(root)
     logging.info('sourcedir=%s', root)
-    rules_filename = Settings.get('rules_filename')
+    target_rules_filename = Settings.get('target_rules_filename')
     for path, files in walk(root):
       relpath = Path.clean(path.replace(root, ''))
       logging.info('Parsing folder: $sourcedir/%s', relpath)
       if not files:
         logging.debug('No files found')
-      elif rules_filename in files:
-        gypfilepath = os.path.join(path, rules_filename)
+      elif target_rules_filename in files:
+        gypfilepath = os.path.join(path, target_rules_filename)
         gypdata = load_json(gypfilepath)
         for gyp_target in gypdata.get('targets', []):
           if 'target_name' in gyp_target:
@@ -224,7 +235,7 @@ def main():
     action_count = sum([args.targets, args.ninja, args.sublime, args.codeblocks])
 
     if action_count == 0:
-      print_out('%s: Nothing to be done.' % os.path.basename(__file__))
+      print_out('Nothing to be done.')
       return
 
     loglevel = logging.DEBUG if args.debug else logging.WARNING
@@ -261,8 +272,7 @@ def main():
     if args.ninja or args.sublime:
       print_out(argparser.command_help['--ninja'])
       import ninja
-      variables = Settings.get('variables')
-      build_targets = ninja.generate(targets, variables, compiler, '.')
+      build_targets = ninja.generate(targets, Settings, compiler, '.')
 
       if args.sublime:
         print_out(argparser.command_help['--sublime'])

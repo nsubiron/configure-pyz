@@ -1,16 +1,15 @@
 {
+  // Settings file for configure.py.
+  //
+  // Note: relative paths are searched from the directory from within
+  // configure.py is called.
+
   "variables": {
     "project_name":   "Ninja C++11",
-
     "builddir":       "build",
     "sourcedir":      "source",
     "projectsdir":    "projects",
-
-    "rules_filename": "rules.gyp",
-    "rootlib":        "root",
-
     "doxyfile":       "tools/Doxyfile",
-
     "shell":          "sh -c"
   },
 
@@ -28,7 +27,9 @@
 
       "bin":  "bin",
       "lib":  "$builddir/lib_release",
-      "obj":  "$builddir/obj_release"
+      "obj":  "$builddir/obj_release",
+
+      "cflags":  ["-O3"]
     },
     {
       "name": "debug",
@@ -37,7 +38,7 @@
       "lib":  "$builddir/lib_debug",
       "obj":  "$builddir/obj_debug",
 
-      "cflags":  ["-ggdb"],
+      "cflags":  ["-O0", "-g"],
       "defines": ["_DEBUG"]
     }
   ],
@@ -50,5 +51,26 @@
     "sources":      ["*.cpp", "*.cc"],
     "headers":      ["*.h"],
     "unused":       []
-  }
+  },
+
+  // Filename of extra rules for targets under $sourcedir. The contents of these
+  // files override "target_defaults".
+  "target_rules_filename": "rules.gyp",
+
+  // Path to the file containing the Ninja rules.
+  "ninja_rules_filepath": "tools/rules.ninja",
+
+  // Default name for the target directly under $sourcedir.
+  "root_target_name": "root",
+
+  // Folders to be included in the Sublime Text project file.
+  "sublime_project_folders": [
+    {
+      "path": ".",
+      "folder_exclude_patterns": ["$builddir"]
+    }
+  ],
+
+  // Compiler name used in CodeBlocks.
+  "codeblocks_compiler_name": "gcc"
 }

@@ -10,8 +10,6 @@ import ninja_syntax
 
 OUTPUT_FILE = 'build.ninja'
 
-RULES_FILEPATH = os.path.join(os.path.dirname(__file__), 'rules.ninja')
-
 EXECUTABLE_EXT = '.exe' if platform.system().lower() == 'windows' else ''
 
 BuildTarget = namedtuple('BuildTarget', 'config, name, phony_name')
@@ -20,10 +18,12 @@ class Ninja(object):
     def __init__(self, out):
         self._writer = ninja_syntax.Writer(out)
         self._writer.comment('Automatic generated file, do not modify.')
-        self._writer.newline()
-        self._writer.include(os.path.relpath(RULES_FILEPATH))
         self._current_config = None
         self._targets = {}
+
+    def add_include(self, include):
+        self._writer.newline()
+        self._writer.include(include)
 
     def add_variables(self, dictionary):
         self._writer.newline()
@@ -76,11 +76,12 @@ class Ninja(object):
         return out
 
 
-def generate(targets, variables, compiler, output_dir):
+def generate(targets, settings, compiler, output_dir):
     build_targets = []
     with open(os.path.join(output_dir, OUTPUT_FILE), 'w+') as out:
       ninja = Ninja(out)
-      ninja.add_variables(variables)
+      ninja.add_include(settings.get('ninja_rules_filepath'))
+      ninja.add_variables(settings.get('variables'))
       ninja.add_variables(compiler.get_global_variables())
       for config in compiler.get_configurations():
         ninja.open_configuration(config.name, config.bin, config.lib, config.obj)

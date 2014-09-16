@@ -21,10 +21,7 @@ class SublimeProject(object):
     def __init__(self):
         self._data = {'folders': [], 'build_systems': [], 'settings': {}}
 
-    def add_path(self, path, folder_exclude_patterns=None):
-        folder = {'path': path}
-        if folder_exclude_patterns is not None:
-          folder['folder_exclude_patterns'] = folder_exclude_patterns
+    def add_folder(self, folder):
         self._data['folders'].append(folder)
 
     def add_settings(self, key, value):
@@ -45,10 +42,12 @@ def get_bin(config_name, settings):
 
 def generate(build_targets, settings):
     output_dir = settings.get('projectsdir')
-    relpath = Path.clean(os.path.relpath(os.getcwd(), output_dir))
     project = SublimeProject()
-    project.add_path(relpath, [settings.get('builddir')])
-
+    for folder in settings.get('sublime_project_folders'):
+      folder = dict((k, settings.expand_variables(v)) for k, v in folder.items())
+      folder['path'] = Path.clean(os.path.relpath(folder['path'], output_dir))
+      project.add_folder(folder)
+    relpath = Path.clean(os.path.relpath(os.getcwd(), output_dir))
     working_dir = Path.join('${project_path}', relpath)
 
     make_all = BuildSystem('make - All', 'make build', working_dir)
