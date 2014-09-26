@@ -57,6 +57,10 @@
   // files override "target_defaults".
   "target_rules_filename": "rules.gyp",
 
+  "ninja_build_filename": "build.ninja",
+
+  "makefile_filename": "Makefile",
+
   // Path to the file containing the Ninja rules.
   "ninja_rules_filepath": "tools/rules.ninja",
 

@@ -205,7 +205,7 @@ def iterate_targets(root):
 def main():
     argparser = ArgumentParser(description=__doc__)
     argparser.add_argument(
-        '--debug', '-d',
+        '-d', '--debug',
         action='store_true',
         help='print debug information')
     argparser.add_argument(
@@ -283,8 +283,9 @@ def main():
       if args.makefile:
         print_out(argparser.command_help['--makefile'])
         import makefile
-        command_call = [os.path.relpath(sys.argv[0])] + ['-f', args.settings_file]
-        makefile.generate(command_call, ninja_targets, actions, '.')
+        this = Path.clean(os.path.relpath(sys.argv[0]))
+        command_call = [this, '-f', args.settings_file]
+        makefile.generate(command_call, ninja_targets, actions, Settings, '.')
 
       if args.sublime:
         print_out(argparser.command_help['--sublime'])

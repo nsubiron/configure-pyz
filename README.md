@@ -5,34 +5,43 @@ Simple build framework for C++ using g++ and
 [ninja](http://martine.github.io/ninja).
 
 ```bash
-$ make projects        # Generate build.ninja and Sublime Text project.
-$ make build           # Generate build.ninja and call ninja.
+$ make configure       # Generate build.ninja (and update Makefile).
+$ make sublime         # Generate Sublime Text project.
 $ make doxygen         # Generate Doxygen documentation.
-$ make                 # Generate build.ninja, projects and call ninja.
+$ ninja                # Build default configuration.
 ```
 
-Use ``make DEBUG=<target_name> ...`` to generate build.ninja with debug
-flags and configure Sublime Text project file to debug given target with
-[SublimeGDB](https://github.com/quarnster/SublimeGDB).
+Targets in the makefile call ``tools/configure.py``. Call ninja directly to
+avoid parsing source directory tree everytime, use the makefile only when
+targets have changed. See ``tools/configure.py --help`` for more options.
 
-Once build.ninja has been generated, ninja can be called directly
+Default settings
+----------------
+
+See ``tools/settings.json``. By default the following targets are available
 
 ```bash
-$ ninja                # Build all.
-$ ninja <target_name>  # Build specific target.
+$ ninja all
+$ ninja debug
+$ ninja release  # (default)
+$ ninja doxygen
+$ ninja <target_name>_debug
+$ ninja <target_name>_release
 ```
 
-Every folder below ``source`` is built by default as library. ``*.cpp`` files
-under ``source/foo/bar/`` generate ``foo_bar.a``. Files directly under
-``source/`` generate ``root.a``.
+Every folder below ``source`` is built by default as static library (dynamic
+libraries are not supported). ``*.cpp`` files under ``source/foo/bar/`` generate
+``foo_bar.a``. Files directly under ``source/`` generate ``root.a``.
 
-To build an executable add a ``rules.gyp`` to the folder, as e.g.
+To specify different target rules add a ``rules.gyp`` to the folder, e.g. to
+build an executable add
 
 ```JSON
 {
   "targets": [
     {
       "target_name": "foobar",
+      "type": "executable",
       "dependencies": [ "foo_bar.a", "root.a" ]
     }
   ]
