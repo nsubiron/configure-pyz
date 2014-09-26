@@ -217,25 +217,31 @@ def main():
     argparser.add_argument(
         '--targets',
         action='store_true',
-        help='generate targets.json file')
+        help='generate targets.json')
     argparser.add_argument(
         '--ninja',
         action='store_true',
-        help='generate build.ninja file')
+        help='generate build.ninja')
+    argparser.add_argument(
+        '--makefile',
+        action='store_true',
+        help='generate Makefile')
     argparser.add_argument(
         '--sublime',
         action='store_true',
-        help='generate Sublime Text project file')
+        help='generate Sublime Text project')
     argparser.add_argument(
         '--codeblocks',
         action='store_true',
-        help='generate CodeBlocks project files (experimental)')
+        help='generate CodeBlocks projects (experimental)')
     args = argparser.parse_args()
 
-    action_count = sum([args.targets, args.ninja, args.sublime, args.codeblocks])
+    actions = ['targets', 'ninja', 'makefile', 'sublime', 'codeblocks']
+    action_count = sum(getattr(args, x) for x in actions)
 
     if action_count == 0:
       print_out('Nothing to be done.')
+      argparser.print_usage()
       return
 
     loglevel = logging.DEBUG if args.debug else logging.WARNING
@@ -269,15 +275,21 @@ def main():
 
     compiler = Compiler(Settings)
 
-    if args.ninja or args.sublime:
+    if args.ninja or args.makefile or args.sublime:
       print_out(argparser.command_help['--ninja'])
       import ninja
-      build_targets = ninja.generate(targets, Settings, compiler, '.')
+      ninja_targets = ninja.generate(targets, Settings, compiler, '.')
+
+      if args.makefile:
+        print_out(argparser.command_help['--makefile'])
+        import makefile
+        command_call = [os.path.relpath(sys.argv[0])] + ['-f', args.settings_file]
+        makefile.generate(command_call, ninja_targets, actions, '.')
 
       if args.sublime:
         print_out(argparser.command_help['--sublime'])
         import sublime
-        sublime.generate(build_targets, Settings)
+        sublime.generate(ninja_targets, Settings)
 
     if args.codeblocks:
       print_out(argparser.command_help['--codeblocks'])
