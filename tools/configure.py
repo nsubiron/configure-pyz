@@ -193,12 +193,7 @@ def iterate_targets(root):
         gypfilepath = os.path.join(path, target_rules_filename)
         gypdata = load_json(gypfilepath)
         for gyp_target in gypdata.get('targets', []):
-          if 'target_name' in gyp_target:
-            yield Target(relpath, files, gyp_target)
-          else:
-            logging.warning(
-                'Missing target_name in %s, target ignored',
-                gypfilepath)
+          yield Target(relpath, files, gyp_target)
       else:
         yield Target(relpath, files)
 

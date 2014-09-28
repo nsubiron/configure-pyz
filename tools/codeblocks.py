@@ -148,6 +148,8 @@ def generate(targets, settings, compiler):
     codeblocks = CodeBlocks(settings, compiler)
     workspace = CodeBlocksWorkspace('all')
     for target in targets:
+      if not target['headers'] and not target['sources']:
+        continue
       target_type = target['type']
       if target_type == 'executable':
         project = create_executable(target, compiler, codeblocks)
