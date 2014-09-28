@@ -61,14 +61,17 @@ class BuildTarget(object):
     def add_compiler(self, options):
         compiler = subelement('Compiler', self.root)
         for option in options:
-          subelement('Add', compiler, {'option': option})
+          if option and not option.isspace():
+            subelement('Add', compiler, {'option': option.strip()})
 
     def add_linker(self, options, libraries):
         linker = subelement('Linker', self.root)
         for library in libraries:
-          subelement('Add', linker, {'library': library})
+          if library and not library.isspace():
+            subelement('Add', linker, {'library': library.strip()})
         for option in options:
-          subelement('Add', linker, {'option': option})
+          if option and not option.isspace():
+            subelement('Add', linker, {'option': option.strip()})
 
 
 class CodeBlocksProject(XmlFile):
@@ -100,7 +103,7 @@ def create_base_project(target, codeblocks):
       project.add_file(codeblocks.makepath('$sourcedir', filename))
     return project
 
-def create_library(target, codeblocks):
+def create_library(target, compiler, codeblocks):
     project = create_base_project(target, codeblocks)
     title = target['target_name']
     for config in codeblocks.configurations:
@@ -115,10 +118,11 @@ def create_library(target, codeblocks):
       build_target.add_option({'type': '2'})
       build_target.add_option({'compiler': codeblocks.compiler_name})
       build_target.add_option({'createDefFile': '1'})
-      build_target.add_compiler([codeblocks.cflags, config.cflags])
+      cflags = compiler.get_compiler_flags(target.raw)
+      build_target.add_compiler([codeblocks.cflags, config.cflags, cflags])
     return project
 
-def create_executable(target, codeblocks):
+def create_executable(target, compiler, codeblocks):
     project = create_base_project(target, codeblocks)
     title = target['target_name']
     for config in codeblocks.configurations:
@@ -132,9 +136,12 @@ def create_executable(target, codeblocks):
       build_target.add_option({'object_output': codeblocks.makepath(config.obj)})
       build_target.add_option({'type': '1'})
       build_target.add_option({'compiler': codeblocks.compiler_name})
-      build_target.add_compiler([codeblocks.cflags, config.cflags])
-      libs = [codeblocks.makepath(config.lib, x) for x in target['dependencies']]
-      build_target.add_linker([codeblocks.lflags, config.lflags], libs)
+      cflags = compiler.get_compiler_flags(target.raw)
+      build_target.add_compiler([codeblocks.cflags, config.cflags, cflags])
+      cleanlib = lambda x: x[2:] if x.startswith('-l') else codeblocks.makepath(config.lib, x)
+      libs = [cleanlib(x) for x in target['dependencies']]
+      lflags = compiler.get_linker_flags(target.raw)
+      build_target.add_linker([codeblocks.lflags, config.lflags, lflags], libs)
     return project
 
 def generate(targets, settings, compiler):
@@ -143,9 +150,9 @@ def generate(targets, settings, compiler):
     for target in targets:
       target_type = target['type']
       if target_type == 'executable':
-        project = create_executable(target, codeblocks)
+        project = create_executable(target, compiler, codeblocks)
       elif target_type == 'static_library':
-        project = create_library(target, codeblocks)
+        project = create_library(target, compiler, codeblocks)
       else:
         logging.warning('Target ignored: type "%s" not implemented', target_type)
         continue

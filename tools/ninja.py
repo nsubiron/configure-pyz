@@ -50,10 +50,17 @@ class Ninja(object):
         self._writer.newline()
         target_name = target['target_name']
         deps = [self._add_object_file(x, cflags) for x in target['sources']]
-        deps += ['$lib/' + x for x in target['dependencies']]
+        inlibs = list(deps)
+        for item in target['dependencies']:
+          if not item.startswith('-l'):
+            inlibs.append('$lib/' + item)
+            deps.append('$lib/' + item)
+          else:
+            deps.append(item)
         out = '$bin/' + target_name + EXECUTABLE_EXT
-        variables = {'lflags': '$lflags ' + lflags} if lflags else None
-        self._writer.build(out, 'link', deps, variables=variables)
+        variables = {'lflags': '$lflags ' + lflags} if lflags else {}
+        variables.update({'libs': ' '.join(deps)} if deps else {})
+        self._writer.build(out, 'link', inlibs, variables=variables)
         phony_name = target_name + '_' + self._current_config
         self._writer.build(phony_name, 'phony', out)
         self._targets[self._current_config].append(phony_name)
@@ -96,11 +103,13 @@ def generate(targets, settings, compiler, output_dir):
         ninja.open_configuration(config.name, config.bin, config.lib, config.obj)
         for target in targets:
           target_type = target['type']
+          cflags = config.cflags + ' ' + compiler.get_compiler_flags(target.raw)
           if target_type == 'executable':
-            btarget = ninja.add_executable(target, config.cflags, config.lflags)
+            lflags = config.lflags + ' ' + compiler.get_linker_flags(target.raw)
+            btarget = ninja.add_executable(target, cflags.strip(), lflags.strip())
             build_targets.append(btarget)
           elif target_type == 'static_library':
-            ninja.add_static_library(target, config.cflags)
+            ninja.add_static_library(target, cflags.strip())
           else:
             logging.warning('Target ignored: type "%s" not implemented', target_type)
       global_targets = ninja.add_global_targets()

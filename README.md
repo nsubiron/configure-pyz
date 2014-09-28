@@ -12,7 +12,7 @@ $ ninja                # Build default configuration.
 ```
 
 Targets in the makefile call ``tools/configure.py``. Call ninja directly to
-avoid parsing source directory tree everytime, use the makefile only when
+avoid parsing source directory tree every time, use the makefile only when
 targets have changed. See ``tools/configure.py --help`` for more options.
 
 Default settings
@@ -42,11 +42,12 @@ build an executable add
     {
       "target_name": "foobar",
       "type": "executable",
-      "dependencies": [ "foo_bar.a", "root.a" ]
+      "dependencies": ["foo_bar.a", "root.a", "-lboost_regex-mt"]
     }
   ]
 }
 ```
 
-note that the order of ``dependencies`` matter. Use plain JSON, gyp syntax is
-not yet supported.
+note that the order of ``dependencies`` matter; prefix ``-l`` to indicate that
+is an external library. Use plain JSON, gyp syntax is not yet supported.
+

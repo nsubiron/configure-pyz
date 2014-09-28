@@ -8,7 +8,7 @@ rule ar
   description = AR $out
 
 rule link
-  command = $cxx $lflags -o $out $in
+  command = $cxx $lflags -o $out $libs
   description = LINK $out
 
 rule doxygen
