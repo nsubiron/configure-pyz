@@ -1,5 +1,15 @@
 #!/usr/bin/env python
+
+# configure.py Copyright (C) 2014 N. Subiron
+#
+# This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you
+# are welcome to redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation, either
+# version 3 of the License, or (at your option) any later version.
+
 """Generate intermediate build files and projects"""
+
+import __builtin__
 
 import argparse
 import fnmatch
@@ -242,14 +252,17 @@ def main():
     loglevel = logging.DEBUG if args.debug else logging.WARNING
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
 
-    builtin_open = __builtins__.open
-    def open_hook(*args, **kwargs):
-        logging.debug('Open file: %s', args[0])
-        try:
-          return builtin_open(*args, **kwargs)
-        except Exception as exception:
-          critical_error(exception)
-    __builtins__.open = open_hook
+    try:
+      builtin_open = __builtin__.open
+      def open_hook(*args, **kwargs):
+          logging.debug('Open file: %s', args[0])
+          try:
+            return builtin_open(*args, **kwargs)
+          except Exception as exception:
+            critical_error(exception)
+      __builtin__.open = open_hook
+    except Exception as exception:
+      logging.warning('Hook to open failed: %s', exception)
 
     Settings.load(args.settings_file)
 

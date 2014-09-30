@@ -29,7 +29,8 @@
       "lib":  "$builddir/lib_release",
       "obj":  "$builddir/obj_release",
 
-      "cflags":  ["-O3"]
+      "cflags":  ["-O3"],
+      "defines": ["NDEBUG"]
     },
     {
       "name": "debug",

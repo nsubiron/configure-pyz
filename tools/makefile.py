@@ -82,5 +82,3 @@ def generate(command_call, ninja_targets, actions, settings, output_dir):
         makefile.newline()
         commands = ['ninja ' + target.phony_name]
         makefile.rule(target.phony_name, ['configure'], commands)
-
-
