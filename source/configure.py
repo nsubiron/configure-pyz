@@ -16,6 +16,7 @@ import fnmatch
 import json
 import logging
 import os
+import pkgutil
 import re
 import sys
 
@@ -30,6 +31,9 @@ def print_out(message, prefix=os.path.basename(__file__)):
 def critical_error(message, *args):
     logging.critical(message, *args)
     sys.exit(1)
+
+def get_resource(filename):
+    return pkgutil.get_data('__main__', filename).decode('utf-8')
 
 def remove_comments(string):
     """Remove C comments from string. See http://stackoverflow.com/a/18381470"""
@@ -213,6 +217,10 @@ def iterate_targets(root):
 
 def main():
     argparser = ArgumentParser(description=__doc__)
+    argparser.add_argument(
+        '-v', '--version',
+        action='version',
+        version='%(prog)s ' + get_resource('version.txt'))
     argparser.add_argument(
         '-d', '--debug',
         action='store_true',

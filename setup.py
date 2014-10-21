@@ -7,7 +7,12 @@ import fnmatch
 import logging
 import os
 import re
+import subprocess
 import zipfile
+
+def get_version():
+    command = ['git', 'describe', '--tags', '--dirty', '--always']
+    return subprocess.check_output(command).decode('utf-8')
 
 def source_walk(root):
     root = os.path.abspath(root)
@@ -45,6 +50,7 @@ def setup():
       args.output = args.source + '.zip'
 
     with zipfile.ZipFile(args.output, 'w', zipfile.ZIP_DEFLATED) as fzip:
+      fzip.writestr('version.txt', get_version())
       for path, relpath in source_walk(args.source):
         fzip.write(path, relpath)
 

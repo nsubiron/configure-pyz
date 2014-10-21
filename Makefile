@@ -6,7 +6,7 @@ SOURCE = source
 default: run
 
 run: dist
-	python bin/$(APPNAME).pyz -h
+	python bin/$(APPNAME).pyz --version
 
 dist: bin/$(APPNAME).pyz
 
