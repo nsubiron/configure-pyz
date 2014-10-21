@@ -1,6 +1,2 @@
-*.pdf
 *.py[cod]
 bin
-build
-build.ninja
-projects

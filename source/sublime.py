@@ -19,13 +19,13 @@ class BuildSystem(object):
 
 class SublimeProject(object):
     def __init__(self):
-        self._data = {'folders': [], 'build_systems': [], 'settings': {}}
+        self._data = {'folders': [], 'build_systems': []}
 
     def add_folder(self, folder):
         self._data['folders'].append(folder)
 
-    def add_settings(self, key, value):
-        self._data['settings'][key] = value
+    def add_other_settings(self, key, value):
+        self._data[key] = value
 
     def add_build_system(self, build_system):
         self._data['build_systems'].append(build_system.data)
@@ -50,6 +50,10 @@ def generate(ninja_targets, settings):
       project.add_folder(folder)
     relpath = Path.clean(os.path.relpath(os.getcwd(), output_dir))
     working_dir = Path.join('${project_path}', relpath)
+
+    other_settings = settings.get('sublime_project_other_settings')
+    for key, value in settings.expand_variables(other_settings).items():
+      project.add_other_settings(key, value)
 
     make_all = BuildSystem('make - ' + project_name, 'make build', working_dir)
     make_all.add_variant('All', 'make all')

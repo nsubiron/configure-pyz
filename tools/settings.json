@@ -3,6 +3,9 @@
   //
   // Note: relative paths are searched from the directory from within
   // configure.py is called.
+  //
+  // $rootpath is also available in this file, it expands to the full path of
+  // the calling directory.
 
   "variables": {
     "project_name":   "Ninja C++11",
@@ -75,6 +78,18 @@
       "folder_exclude_patterns": ["$builddir"]
     }
   ],
+
+  // Other settings to add to the Sublime Text project file.
+  "sublime_project_other_settings": {
+      "SublimeLinter": {
+        "linters": {
+          "clang": {
+            "include_dirs": ["$rootpath/$sourcedir"],
+            "extra_flags": "-std=c++11"
+          }
+        }
+      }
+  },
 
   // Compiler name used in CodeBlocks.
   "codeblocks_compiler_name": "gcc"

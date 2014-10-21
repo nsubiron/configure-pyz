@@ -78,11 +78,15 @@ class Settings(object):
     @staticmethod
     def expand_variables(obj):
         if isinstance(obj, STRING_TYPES):
-          for key, value in Settings.get('variables').items():
+          variables = Settings.get('variables')
+          variables.update({'rootpath': Path.clean(os.path.abspath('.'))})
+          for key, value in variables.items():
             obj = re.sub(r'(\$\{?%s\}?)' % key, value, obj)
           return obj
         elif isinstance(obj, list):
           return [Settings.expand_variables(x) for x in obj]
+        elif isinstance(obj, dict):
+          return dict((k, Settings.expand_variables(v)) for k, v in obj.items())
         else:
           critical_error('Invalid object %s', type(obj))
 
