@@ -1,7 +1,10 @@
 """Embed files into C code"""
 
+import filecmp
 import os
+import shutil
 import subprocess
+import tempfile
 
 def _embed(inputfile):
     command = ['xxd', '-i', inputfile]
@@ -23,15 +26,24 @@ class EmbeddedDataFile(object):
         hformat = 'extern unsigned char %s[];\n'
         self.hout.write(hformat % name)
 
+def _mv_temp_file(tempf, dst):
+    tempf.close()
+    if not os.path.isfile(dst) or not filecmp.cmp(tempf.name, dst):
+      shutil.move(tempf.name, dst)
+    else:
+      os.remove(tempf.name)
+
 def _embed_target(target, sourcedir):
     cppfile_path = os.path.join(sourcedir, target.path, 'EmbeddedData.cpp')
     hfile_path = os.path.join(sourcedir, target.path, 'EmbeddedData.h')
-    with open(cppfile_path, 'w+') as cppfile:
-      with open(hfile_path, 'w+') as hfile:
+    with tempfile.NamedTemporaryFile(delete=False) as cppfile:
+      with tempfile.NamedTemporaryFile(delete=False) as hfile:
         writer = EmbeddedDataFile(cppfile, hfile)
         for item in target["embedded_data"]:
           data = _embed(os.path.join(sourcedir, item))
           writer.add_data(_get_variable_name(item), data)
+        _mv_temp_file(cppfile, cppfile_path)
+        _mv_temp_file(hfile, hfile_path)
 
 def embed(targets, sourcedir):
     for target in targets:
