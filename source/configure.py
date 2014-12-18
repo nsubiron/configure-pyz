@@ -12,13 +12,15 @@
 import __builtin__
 
 import argparse
-import fnmatch
+import glob
 import json
 import logging
 import os
 import pkgutil
 import re
 import sys
+
+from contextlib import contextmanager
 
 if sys.version_info[0] != 2:
   STRING_TYPES = (str,)
@@ -31,6 +33,16 @@ def print_out(message, prefix='configure.pyz'):
 def critical_error(message, *args):
     logging.critical(message, *args)
     sys.exit(1)
+
+@contextmanager
+def pushd(directory):
+    """Context manager to temporally change working directory."""
+    cwd = os.getcwd()
+    try:
+      os.chdir(directory)
+      yield
+    finally:
+      os.chdir(cwd)
 
 def get_resource(filename):
     return pkgutil.get_data('__main__', filename).decode('utf-8')
@@ -100,7 +112,7 @@ class Path(object):
 
     @staticmethod
     def clean(path):
-        path = path.replace('\\', '/')
+        path = os.path.normpath(path).replace('\\', '/')
         return path[1:] if path.startswith('/') else path
 
     @staticmethod
@@ -114,9 +126,11 @@ class Path(object):
         return Path.clean(path).replace('/', '_')
 
     @staticmethod
-    def expand_patterns(patterns, path, files):
-        regex = re.compile('|'.join(fnmatch.translate(p) for p in patterns))
-        return [Path.join(path, x) for x in files if regex.match(x) is not None]
+    def expand_patterns(patterns, prefix):
+        files = []
+        for pattern in patterns:
+          files.extend(glob.glob(pattern))
+        return [Path.join(prefix, x) for x in files if os.path.isfile(x)]
 
 
 class Target(object):
@@ -137,11 +151,10 @@ class Target(object):
 
     def _expand(self, files):
         for key in ['sources', 'headers', 'embedded_data']:
-          if self.raw[key]:
-            self.raw[key] = Path.expand_patterns(self.raw[key], self.path, files)
+          self.raw[key] = Path.expand_patterns(self.raw[key], self.path)
         used = lambda x: x in self.raw['sources'] or x in self.raw['headers'] or x in self.raw['embedded_data']
-        all_files = Path.expand_patterns([], self.path, files)
-        self.raw['unused'] = [x for x in all_files if not used(x)]
+        files = [Path.join(self.path, x) for x in files]
+        self.raw['unused'] = [x for x in files if not used(x)]
 
 
 class Configuration(object):
@@ -205,17 +218,18 @@ def iterate_targets(root):
     logging.info('sourcedir=%s', root)
     target_rules_filename = Settings.get('target_rules_filename')
     for path, files in walk(root):
-      relpath = Path.clean(path.replace(root, ''))
-      logging.info('Parsing folder: $sourcedir/%s', relpath)
-      if not files:
-        logging.debug('No files found')
-      elif target_rules_filename in files:
-        gypfilepath = os.path.join(path, target_rules_filename)
-        gypdata = load_json(gypfilepath)
-        for gyp_target in gypdata.get('targets', []):
-          yield Target(relpath, files, gyp_target)
-      else:
-        yield Target(relpath, files)
+      with pushd(os.path.join(root, path)):
+        relpath = Path.clean(path.replace(root, ''))
+        logging.info('Parsing folder: $sourcedir/%s', relpath)
+        if not files:
+          logging.debug('No files found')
+        elif target_rules_filename in files:
+          gypfilepath = os.path.join(path, target_rules_filename)
+          gypdata = load_json(gypfilepath)
+          for gyp_target in gypdata.get('targets', []):
+            yield Target(relpath, files, gyp_target)
+        else:
+          yield Target(relpath, files)
 
 def main():
     argparser = ArgumentParser(description=__doc__)
