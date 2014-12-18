@@ -48,13 +48,14 @@
   ],
 
   "target_defaults": {
-    "type":         "static_library",
-    "dependencies": [],
-    "defines":      [],
-    "include_dirs": [],
-    "sources":      ["*.cpp", "*.cc"],
-    "headers":      ["*.h"],
-    "unused":       []
+    "type":          "static_library",
+    "dependencies":  [],
+    "defines":       [],
+    "include_dirs":  [],
+    "sources":       ["*.cpp", "*.cc"],
+    "headers":       ["*.h"],
+    "embedded_data": [],
+    "unused":        []
   },
 
   // Filename of extra rules for targets under $sourcedir. The contents of these

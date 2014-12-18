@@ -136,10 +136,12 @@ class Target(object):
         return self.raw[key]
 
     def _expand(self, files):
-        for key in ['sources', 'headers', 'unused']:
-          self.raw[key] = Path.expand_patterns(self.raw[key], self.path, files)
-        used = lambda x: x in self.raw['sources'] or x in self.raw['headers']
-        self.raw['unused'] = [x for x in self.raw['unused'] if not used(x)]
+        for key in ['sources', 'headers', 'embedded_data']:
+          if self.raw[key]:
+            self.raw[key] = Path.expand_patterns(self.raw[key], self.path, files)
+        used = lambda x: x in self.raw['sources'] or x in self.raw['headers'] or x in self.raw['embedded_data']
+        all_files = Path.expand_patterns([], self.path, files)
+        self.raw['unused'] = [x for x in all_files if not used(x)]
 
 
 class Configuration(object):
@@ -236,6 +238,10 @@ def main():
         action='store_true',
         help='generate targets.json')
     argparser.add_argument(
+        '--embed',
+        action='store_true',
+        help='embed resources, requires "xxd" (experimental)')
+    argparser.add_argument(
         '--ninja',
         action='store_true',
         help='generate build.ninja')
@@ -253,7 +259,7 @@ def main():
         help='generate CodeBlocks projects (experimental)')
     args = argparser.parse_args()
 
-    actions = ['targets', 'ninja', 'makefile', 'sublime', 'codeblocks']
+    actions = ['targets', 'embed', 'ninja', 'makefile', 'sublime', 'codeblocks']
     action_count = sum(getattr(args, x) for x in actions)
 
     if action_count == 0:
@@ -292,6 +298,12 @@ def main():
         out.write(json.dumps(data, indent=2))
       if action_count == 1:
         return
+
+    if args.embed:
+      print_out(argparser.command_help['--embed'])
+      import embedder
+      embedder.embed(targets, Settings.get('sourcedir'))
+      return # Targets may have changed.
 
     compiler = Compiler(Settings)
 
