@@ -25,7 +25,7 @@ if sys.version_info[0] != 2:
 else:
   STRING_TYPES = (str, unicode)
 
-def print_out(message, prefix=os.path.basename(__file__)):
+def print_out(message, prefix='configure.pyz'):
     print('%s: %s' % (prefix, message))
 
 def critical_error(message, *args):
