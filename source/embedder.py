@@ -1,16 +1,18 @@
 """Embed files into C code"""
 
+import binascii
 import filecmp
 import os
 import shutil
-import subprocess
 import tempfile
+import textwrap
 
-def _embed(inputfile):
-    command = ['xxd', '-i', inputfile]
-    # Ugly workaround.
-    data = [x for x in subprocess.check_output(command).decode('utf-8').split('\n')]
-    return '\n'.join(data[1:-3])
+def _embed(inputfile, chunksize=2, width=80, indent=2):
+    with open(inputfile, 'rb') as fd:
+      hexdata = binascii.hexlify(fd.read())
+    chunks = ['0x' + hexdata[i:(i+chunksize)] for i in range(0, len(hexdata), chunksize)]
+    ind = ' ' * indent
+    return ind + ('\n'+ind).join(textwrap.wrap(', '.join(chunks), width-indent)), len(chunks)
 
 def _get_variable_name(filepath):
     return filepath.replace('.', '_').replace('/', '_').lower()
@@ -20,11 +22,13 @@ class EmbeddedDataFile(object):
         self.cppout = cppout
         self.hout = hout
 
-    def add_data(self, name, data):
+    def add_data(self, name, data, length):
         cppformat = 'unsigned char %s[] = {\n%s\n};\n'
-        self.cppout.write(cppformat % (name, data))
+        cppformat += 'unsigned int %s_len = %iu;\n'
+        self.cppout.write(cppformat % (name, data, name, length))
         hformat = 'extern unsigned char %s[];\n'
-        self.hout.write(hformat % name)
+        hformat += 'extern unsigned int %s_len;\n'
+        self.hout.write(hformat % (name, name))
 
 def _mv_temp_file(tempf, dst):
     tempf.close()
@@ -40,8 +44,8 @@ def _embed_target(target, sourcedir):
       with tempfile.NamedTemporaryFile(delete=False) as hfile:
         writer = EmbeddedDataFile(cppfile, hfile)
         for item in target["embedded_data"]:
-          data = _embed(os.path.join(sourcedir, item))
-          writer.add_data(_get_variable_name(item), data)
+          data, length = _embed(os.path.join(sourcedir, item))
+          writer.add_data(_get_variable_name(item), data, length)
         _mv_temp_file(cppfile, cppfile_path)
         _mv_temp_file(hfile, hfile_path)
 

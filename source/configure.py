@@ -254,7 +254,7 @@ def main():
     argparser.add_argument(
         '--embed',
         action='store_true',
-        help='embed resources, requires "xxd" (experimental)')
+        help='embed resources (experimental)')
     argparser.add_argument(
         '--ninja',
         action='store_true',
@@ -317,7 +317,8 @@ def main():
       print_out(argparser.command_help['--embed'])
       import embedder
       embedder.embed(targets, Settings.get('sourcedir'))
-      return # Targets may have changed.
+      print_out("Targets may have changed, re-run configure.pyz to update.")
+      return
 
     compiler = Compiler(Settings)
 
