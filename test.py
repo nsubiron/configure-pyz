@@ -16,19 +16,31 @@ from contextlib import contextmanager
 class Logger(object):
     def __init__(self, file_stream):
         self.file_stream = file_stream
+        self.current_test = 'null'
 
     def error(self, text):
+        text = '%s: %s' % (self.current_test, text)
         self._write('ERROR: %s' % text)
         logging.error(text)
 
-    def log_new_test(self, filename, folder):
-        text = 'running "%s" at "%s"' % (folder, filename)
+    def info(self, text):
         self._write('INFO: %s' % text)
         logging.info(text)
 
-    def print_command_output(self, output):
+    def log_new_test(self, filename, folder):
+        folder = os.path.basename(os.path.normpath(folder))
+        filename = os.path.splitext(filename)[0]
+        self.current_test = '.'.join([folder, filename])
+        text = '%s: running' % self.current_test
+        self.info(text)
+
+    def success(self):
+        self.info('%s: success' % self.current_test)
+
+    def print_command_output(self, output, display_on_screen=False):
         self._write(output)
-        print('\033[30;1m%s\033[0m' % output)
+        if display_on_screen:
+            print('\033[30;1m%s\033[0m' % output)
 
     def _write(self, text):
         self.file_stream.write(text + '\n')
@@ -69,7 +81,7 @@ def do_the_test():
         '--script',
         metavar='FILENAME',
         dest='script_filename',
-        default='test*.sh',
+        default='*.sh',
         help='filename of the script to run on each subfolder (can have wild cards)')
     argparser.add_argument(
         '--log-file',
@@ -95,18 +107,23 @@ def do_the_test():
     with open(args.log_file, 'w+') as file_stream:
         logger = Logger(file_stream)
 
-        environmet = {'CONFIGURE_PYZ': os.path.abspath(args.configure_pyz_path)}
+        environmet = dict(os.environ)
+        environmet['CONFIGURE_PYZ'] = os.path.abspath(args.configure_pyz_path)
         for filename, path in source_walk(args.testdir, args.script_filename):
             try:
                 logger.log_new_test(filename, path)
-                logger.print_command_output(run_test(filename, path, environmet))
+                output = run_test(filename, path, environmet)
+                logger.print_command_output(output)
+                logger.success()
             except subprocess.CalledProcessError as exception:
-                logger.print_command_output(exception.output)
+                logger.print_command_output(exception.output, display_on_screen=True)
                 logger.error(exception)
                 sys.exit(1)
             except Exception as exception:
                 logger.error(exception)
                 sys.exit(2)
+
+        logger.info("every test terminated successfully")
 
 
 if __name__ == '__main__':
