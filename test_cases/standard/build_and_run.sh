@@ -3,7 +3,7 @@ source ../header.include
 
 rm -Rf bin build projects
 rm -f build.ninja Makefile configure.yaml
-find . -regex '.*EmbeddedData\.\(h\|cpp\)' -delete
+find . -regex '.*embedded_data\.\(h\|cpp\)' -delete
 
 $CONFIGURE_PYZ -d -g --targets --makefile
 

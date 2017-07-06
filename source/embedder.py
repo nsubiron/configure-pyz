@@ -45,8 +45,8 @@ def _mv_temp_file(tempf, dst):
       os.remove(tempf.name)
 
 def _embed_target(target, sourcedir):
-    cppfile_path = os.path.join(sourcedir, target.path, 'EmbeddedData.cpp')
-    hfile_path = os.path.join(sourcedir, target.path, 'EmbeddedData.h')
+    cppfile_path = os.path.join(sourcedir, target.path, 'embedded_data.cpp')
+    hfile_path = os.path.join(sourcedir, target.path, 'embedded_data.h')
     with tempfile.NamedTemporaryFile(delete=False) as cppfile:
       with tempfile.NamedTemporaryFile(delete=False) as hfile:
         writer = EmbeddedDataFile(cppfile, hfile)

@@ -1,5 +1,5 @@
-**/EmbeddedData.cpp
-**/EmbeddedData.h
+**/embedded_data.cpp
+**/embedded_data.h
 */Makefile
 */bin
 */build
