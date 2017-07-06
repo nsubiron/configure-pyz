@@ -3,7 +3,7 @@ SHELL = sh
 APPNAME = configure
 SOURCE = source
 
-default: run test
+default: run
 
 test: dist
 	@python test.py bin/$(APPNAME).pyz test_cases

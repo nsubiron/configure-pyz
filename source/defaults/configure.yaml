@@ -1,0 +1,63 @@
+# Settings file for configure.pyz.
+#
+# Relative paths are searched from the directory from within configure.pyz is
+# called.
+#
+# $rootpath is also available in this file, it expands to the full path of the
+# calling directory.
+
+variables:
+  project_name:   %project_name%
+  sourcedir:      %sourcedir%
+  builddir:       build
+  projectsdir:    projects
+
+compiler:
+  cxx:      %cxx%
+  cflags:   -Wall -Wextra
+  lflags:   -Wall -Wextra
+  includes: [$sourcedir]
+  defines:  []
+
+configurations:
+  - name: release
+    bin:  bin
+    lib:  $builddir/lib_release
+    obj:  $builddir/obj_release
+    cflags:  -O3
+    defines: [NDEBUG]
+  - name: debug
+    bin:  $builddir/bin_debug
+    lib:  $builddir/lib_debug
+    obj:  $builddir/obj_debug
+    cflags:  -O0 -g
+    defines: [_DEBUG]
+
+targets:
+  filename:  rules.json
+  defaults:
+    type:          static_library
+    dependencies:  []
+    defines:       []
+    include_dirs:  []
+    sources:       ["*.cpp", "*.cc"]
+    headers:       ["*.hpp", "*.h"]
+    embedded_data: []
+    unused:        []
+
+ninja:
+  filename: build.ninja
+  add_default_rules: true
+  include_file: null
+
+makefile:
+  filename: Makefile
+
+doxygen:
+  doxyfile_template: null
+
+sublime:
+  project_template: null
+
+codeblocks:
+  compiler_name: gcc

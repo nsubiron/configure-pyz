@@ -1,10 +1,21 @@
+# configure.pyz Copyright (C) 2014 N. Subiron Montoro
+#
+# This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you
+# are welcome to redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation, either
+# version 3 of the License, or (at your option) any later version.
+
 """Generate Sublime Text project file"""
 
 import json
 import os
+import re
 
 from configure import Path
-from configure import critical_error
+
+import util
+from util import critical_error
+
 
 class BuildSystem(object):
     def __init__(self, name, shell_cmd, working_dir):
@@ -17,43 +28,16 @@ class BuildSystem(object):
         self.data['variants'].append({'name': name, 'shell_cmd': shell_cmd})
 
 
-class SublimeProject(object):
-    def __init__(self):
-        self._data = {'folders': [], 'build_systems': []}
-
-    def add_folder(self, folder):
-        self._data['folders'].append(folder)
-
-    def add_other_settings(self, key, value):
-        self._data[key] = value
-
-    def add_build_system(self, build_system):
-        self._data['build_systems'].append(build_system.data)
-
-    def to_string(self):
-        return json.dumps(self._data, indent=2)
-
-
 def get_bin(config_name, settings):
     for item in settings.get('configurations'):
-      if item['name'] == config_name:
-        return settings.expand_variables(item['bin'])
+        if item['name'] == config_name:
+            return settings.expand_variables(item['bin'])
     critical_error('Configuration "%s" not found', config_name)
 
-def generate(ninja_targets, settings):
-    output_dir = settings.get('projectsdir')
-    project_name = settings.get('project_name')
-    project = SublimeProject()
-    for folder in settings.get('sublime_project_folders'):
-      folder = dict((k, settings.expand_variables(v)) for k, v in folder.items())
-      folder['path'] = Path.clean(os.path.relpath(folder['path'], output_dir))
-      project.add_folder(folder)
-    relpath = Path.clean(os.path.relpath(os.getcwd(), output_dir))
-    working_dir = Path.join('${project_path}', relpath)
 
-    other_settings = settings.get('sublime_project_other_settings')
-    for key, value in settings.expand_variables(other_settings).items():
-      project.add_other_settings(key, value)
+def generate(ninja_targets, settings):
+    project_name = settings.get('project_name')
+    working_dir = '$rootdir'
 
     make_all = BuildSystem('make - ' + project_name, 'make build', working_dir)
     make_all.add_variant('All', 'make all')
@@ -64,25 +48,42 @@ def generate(ninja_targets, settings):
     ninja_all.add_variant('All', 'ninja all')
     ninja_all.add_variant('Clean', 'ninja -t clean')
     ninja_all.add_variant('Doxygen Documentation', 'ninja doxygen')
-    project.add_build_system(make_all)
-    project.add_build_system(ninja_all)
+
+    build_systems = [make_all.data, ninja_all.data]
 
     for target in ninja_targets.build_targets:
-      build_target = BuildSystem(
-          target.config + ' - ' + target.name,
-          'ninja %s' % target.phony_name,
-          working_dir)
-      bindir = get_bin(target.config, settings)
-      binary = Path.join(working_dir, bindir, target.name)
-      build_target.add_variant(
-          'Run',
-          'ninja %s && %s' % (target.phony_name, binary))
-      build_target.add_variant(
-          'Clean',
-          'ninja -t clean %s' % target.phony_name)
-      project.add_build_system(build_target)
+        build_target = BuildSystem(
+            target.config + ' - ' + target.name,
+            'ninja %s' % target.phony_name,
+            working_dir)
+        bindir = get_bin(target.config, settings)
+        binary = Path.join(working_dir, bindir, target.name)
+        build_target.add_variant(
+            'Run',
+            'ninja %s && %s' % (target.phony_name, binary))
+        build_target.add_variant(
+            'Clean',
+            'ninja -t clean %s' % target.phony_name)
+        build_systems.append(build_target.data)
 
-    extension = '.sublime-project'
-    filename = os.path.join(output_dir, project_name + extension)
+    sublime_settings = settings.get('sublime')
+
+    template_filename = settings.expand_variables(sublime_settings.get('project_template', None))
+    if template_filename is not None:
+        with open(template_filename, 'r') as fd:
+            template = fd.read()
+        if not template:
+            critical_error('%s seems to be empty', template_filename)
+    else:
+        template = util.get_resource('defaults/tmpl.sublime-project')
+
+    project = re.sub(
+        r'(\$build_systems)',
+        json.dumps(build_systems, indent=4, separators=(',', ': ')),
+        template)
+    project = settings.expand_variables(project)
+
+    filename = settings.expand_variables('$projectsdir/$project_name.sublime-project')
+    util.mkdir_p(os.path.dirname(filename))
     with open(filename, 'w+') as out:
-      out.write(project.to_string())
+        out.write(project)

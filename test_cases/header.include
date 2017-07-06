@@ -1,6 +1,6 @@
 set -e
 echo
-echo "--- Starting test ------"
+echo "--- Starting test ---------------"
 echo "file:          $0"
 echo "directory:     $PWD"
 echo "configure.pyz: $CONFIGURE_PYZ"
@@ -8,5 +8,5 @@ echo -n "version:       "
 $CONFIGURE_PYZ --version
 echo -n "time-stamp:    "
 date -R
-echo "------------------------"
+echo "---------------------------------"
 set -v

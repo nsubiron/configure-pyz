@@ -1,3 +1,10 @@
+# configure.pyz Copyright (C) 2014 N. Subiron Montoro
+#
+# This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you
+# are welcome to redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation, either
+# version 3 of the License, or (at your option) any later version.
+
 import logging
 import os
 import platform
@@ -7,6 +14,8 @@ import xml.etree.cElementTree as ElementTree
 
 from configure import Path
 
+import util
+
 EXECUTABLE_EXT = '.exe' if platform.system().lower() == 'windows' else ''
 
 class CodeBlocks(object):
@@ -14,8 +23,9 @@ class CodeBlocks(object):
 
     def __init__(self, settings, compiler):
         self._settings = settings
-        self.compiler_name = settings.get('codeblocks_compiler_name')
+        self.compiler_name = settings.get('codeblocks').get('compiler_name', 'gcc')
         self.projectsdir = settings.get('projectsdir')
+        util.mkdir_p(self.projectsdir)
         self.configurations = compiler.get_configurations()
         cvars = compiler.get_global_variables()
         self.cflags = cvars['cflags']

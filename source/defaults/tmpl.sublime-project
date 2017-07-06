@@ -1,0 +1,17 @@
+{
+    "folders": [
+        {
+            "folder_exclude_patterns": ["$builddir"],
+            "path": "$rootdir"
+        }
+    ],
+    "build_systems": $build_systems,
+    "SublimeLinter": {
+        "linters": {
+            "clang": {
+                "include_dirs": ["$rootdir/$sourcedir"],
+                "extra_flags": "$cflags"
+            }
+        }
+    }
+}

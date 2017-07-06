@@ -1,7 +1,12 @@
 #!/bin/bash
 source ../header.include
 
-$CONFIGURE_PYZ -f tools/configure.json --makefile
+rm -Rf bin build projects
+rm -f build.ninja Makefile configure.yaml
+find . -regex '.*EmbeddedData\.\(h\|cpp\)' -delete
+
+$CONFIGURE_PYZ -d -g
+$CONFIGURE_PYZ -d --targets --makefile
 
 make embed
 make debug
@@ -10,11 +15,29 @@ make debug
 make release
 ./bin/myexe
 
-make targets
 make sublime
 make codeblocks
 make doxygen
 
-rm -Rf bin build projects
-rm -f build.ninja Makefile
-find . -regex '.*EmbeddedData\.\(h\|cpp\)' -delete
+make clean
+make all
+./build/bin_debug/myexe
+./bin/myexe
+
+$CONFIGURE_PYZ -d -f configure.variant.yaml --targets --makefile
+
+make embed
+make debug
+./build/variant/bin_debug/myexe
+
+make release
+./build/variant/bin_release/myexe
+
+make sublime
+make codeblocks
+make doxygen
+
+make clean
+make all
+./build/variant/bin_debug/myexe
+./build/variant/bin_release/myexe

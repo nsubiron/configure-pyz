@@ -1,0 +1,12 @@
+rule cxx
+  depfile = $out.d
+  command = $cxx -MMD -MF $out.d $cflags -c $in -o $out
+  description = CC $out
+
+rule ar
+  command = ar crsT $out $in
+  description = AR $out
+
+rule link
+  command = $cxx $lflags -o $out $libs
+  description = LINK $out

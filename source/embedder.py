@@ -1,3 +1,10 @@
+# configure.pyz Copyright (C) 2014 N. Subiron Montoro
+#
+# This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you
+# are welcome to redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation, either
+# version 3 of the License, or (at your option) any later version.
+
 """Embed files into C code"""
 
 import binascii
