@@ -5,8 +5,7 @@ rm -Rf bin build projects
 rm -f build.ninja Makefile configure.yaml
 find . -regex '.*EmbeddedData\.\(h\|cpp\)' -delete
 
-$CONFIGURE_PYZ -d -g
-$CONFIGURE_PYZ -d --targets --makefile
+$CONFIGURE_PYZ -d -g --targets --makefile
 
 make embed
 make debug

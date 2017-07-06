@@ -209,7 +209,7 @@ def main():
         '-g',
         action='store_true',
         dest='init',
-        help='generate a default %s file and exit' % default_settings)
+        help='generate a default %s file' % default_settings)
     argparser.add_argument(
         '-f',
         metavar='FILE',
@@ -265,7 +265,6 @@ def main():
     if args.init:
         import init
         init.initialize()
-        return
 
     if args.settings_file is None:
         print_out('Missing settings.')
