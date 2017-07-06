@@ -87,6 +87,18 @@ def load_yaml(filepath):
             critical_error('Error parsing file %s\n%s', filepath, exception)
 
 
+def load_yaml_or_json(filepath):
+    with open(filepath, 'r') as datafile:
+        try:
+            ext = os.path.splitext(filepath)[1]
+            if any(ext == x for x in ['.yaml', '.yml']):
+                return yaml.load(datafile)
+            else: # assume it may be a json file with c comments.
+                return yaml.load(remove_comments(datafile.read()).replace('\t', '  '))
+        except Exception as exception:
+            critical_error('Error parsing file %s\n%s', filepath, exception)
+
+
 def upper_first(string):
     return string[0].upper() + string[1:] if string else ''
 

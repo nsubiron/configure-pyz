@@ -34,7 +34,7 @@ configurations:
     defines: [_DEBUG]
 
 targets:
-  filename:  rules.json
+  filename: targets.json
   defaults:
     type:          static_library
     dependencies:  []

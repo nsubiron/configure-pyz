@@ -1,0 +1,6 @@
+targets:
+  - target_name: myexe
+    type: executable
+    dependencies:
+      - mylib.a
+      - mylib_dependency.a

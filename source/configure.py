@@ -183,9 +183,9 @@ def iterate_targets(root):
             if not files:
                 logging.debug('No files found')
             elif target_rules_filename in files:
-                gypfilepath = os.path.join(path, target_rules_filename)
-                gypdata = util.load_json(gypfilepath)
-                for gyp_target in gypdata.get('targets', []):
+                target_rules_filepath = os.path.join(path, target_rules_filename)
+                target_rules = util.load_yaml_or_json(target_rules_filepath)
+                for gyp_target in target_rules.get('targets', []):
                     yield Target(relpath, files, gyp_target)
             else:
                 yield Target(relpath, files)

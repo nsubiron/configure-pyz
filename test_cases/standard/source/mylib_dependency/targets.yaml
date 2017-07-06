@@ -1,0 +1,3 @@
+targets:
+  - type: static_library
+    embedded_data: [resources/*]
