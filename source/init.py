@@ -18,6 +18,11 @@ import util
 SUPPORTED_COMPILERS = ['g++', 'clang++']
 
 
+def critical_error_if_file_exists(path):
+    if os.path.isfile(path):
+        util.critical_error('"%s" already exists', path)
+
+
 def get_compiler():
     for compiler in SUPPORTED_COMPILERS:
         if util.which(compiler) is not None:
@@ -25,7 +30,9 @@ def get_compiler():
     return SUPPORTED_COMPILERS[0]
 
 
-def initialize():
+def init_settings_file(filepath):
+    critical_error_if_file_exists(filepath)
+
     if util.which('ninja') is None:
         logging.warning('cannot find ninja')
 
@@ -40,5 +47,18 @@ def initialize():
     for key, value in varlist.items():
         template = re.sub(r'(%%%s%%)' % key, value, template)
 
-    with open(util.get_default_settings_file(), 'w+') as  fd:
+    with open(filepath, 'w+') as  fd:
         fd.write(template)
+
+
+def init_hello_world():
+    targets_filepath = 'source/hello_world/targets.json'
+    helloworld_filepath = 'source/hello_world/hello_world.cpp'
+    critical_error_if_file_exists(helloworld_filepath)
+    critical_error_if_file_exists(targets_filepath)
+    util.mkdir_p(os.path.dirname(targets_filepath))
+
+    with open(targets_filepath, 'w+') as  fd:
+        fd.write(util.get_resource('defaults/targets.json'))
+    with open(helloworld_filepath, 'w+') as  fd:
+        fd.write(util.get_resource('defaults/hello_world.cpp'))

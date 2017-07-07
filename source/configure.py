@@ -190,6 +190,7 @@ def iterate_targets(root):
             else:
                 yield Target(relpath, files)
 
+
 def main():
     argparser = argparse.ArgumentParser(description=__doc__)
     argparser.add_argument(
@@ -204,18 +205,24 @@ def main():
         '--targets',
         action='store_true',
         help='write out targets (for debugging purposes)')
-    default_settings = util.get_default_settings_file()
     argparser.add_argument(
-        '-g',
+        '--hello-world',
         action='store_true',
-        dest='init',
-        help='generate a default %s file' % default_settings)
-    argparser.add_argument(
+        dest='init_hello_world',
+        help='initialize this folder with a "hello world" project')
+    settings_file_group = argparser.add_argument_group('configuration file')
+    default_settings = util.get_default_settings_file()
+    settings_file_group.add_argument(
         '-f',
         metavar='FILE',
         dest='settings_file',
         default=default_settings,
         help='path to an existing config file, defaults to %s' % default_settings)
+    settings_file_group.add_argument(
+        '-g',
+        action='store_true',
+        dest='init_settings_file',
+        help='generate a default %s file' % default_settings)
     generators_group = argparser.add_argument_group('generators')
     help_gatherer = HelpGatherer(generators_group)
     generators_group.add_argument(
@@ -244,9 +251,6 @@ def main():
         help='generate CodeBlocks projects (experimental)')
     args = argparser.parse_args()
 
-    actions = ['targets', 'embed', 'ninja', 'makefile', 'doxyfile', 'sublime', 'codeblocks']
-    action_count = sum(getattr(args, x) for x in actions)
-
     loglevel = logging.DEBUG if args.debug else logging.WARNING
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
 
@@ -262,14 +266,22 @@ def main():
     except Exception as exception:
         logging.warning('Hook to open failed: %s', exception)
 
-    if args.init:
+    if args.init_settings_file or args.init_hello_world:
+        print_out('Generate %s.' % args.settings_file)
         import init
-        init.initialize()
+        init.init_settings_file(args.settings_file)
+    if args.init_hello_world:
+        print_out('Generate "Hello World" code.')
+        init.init_hello_world()
+        args.makefile = True
 
     if args.settings_file is None:
         print_out('Missing settings.')
         argparser.print_usage()
         return
+
+    actions = ['targets', 'embed', 'ninja', 'makefile', 'doxyfile', 'sublime', 'codeblocks']
+    action_count = sum(getattr(args, x) for x in actions)
 
     if action_count == 0:
         print_out('Nothing to be done.')
