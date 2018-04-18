@@ -5,7 +5,7 @@ SOURCE = source
 
 default: run
 
-test: dist
+check: dist
 	@python test.py bin/$(APPNAME).pyz test_cases
 
 run: dist

@@ -1,6 +1,8 @@
 configure.pyz
 =============
 
+[![Build Status](https://travis-ci.org/nsubiron/configure-pyz.svg?branch=master)](https://travis-ci.org/nsubiron/configure-pyz)
+
 Simple C++ build system for gcc and clang compilers.
 
 Meant to quickly set up and build a C++ project for testing or prototyping.
