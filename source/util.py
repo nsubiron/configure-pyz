@@ -66,8 +66,9 @@ def get_resource(filename):
 def remove_comments(string):
     """Remove C comments from string. See http://stackoverflow.com/a/18381470"""
     pattern = r'(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)'
-    regex = re.compile(pattern, re.MULTILINE|re.DOTALL)
-    replacer = lambda match: match.group(1) if match.group(2) is None else ''
+    regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
+
+    def replacer(match): return match.group(1) if match.group(2) is None else ''
     return regex.sub(replacer, string)
 
 
@@ -93,7 +94,7 @@ def load_yaml_or_json(filepath):
             ext = os.path.splitext(filepath)[1]
             if any(ext == x for x in ['.yaml', '.yml']):
                 return yaml.load(datafile)
-            else: # assume it may be a json file with c comments.
+            else:  # assume it may be a json file with c comments.
                 return yaml.load(remove_comments(datafile.read()).replace('\t', '  '))
         except Exception as exception:
             critical_error('Error parsing file %s\n%s', filepath, exception)

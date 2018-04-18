@@ -46,11 +46,11 @@ class Writer(object):
     def rule(self, name, dependencies=None, commands=None):
         line = [name + ':']
         if dependencies is not None:
-          line += dependencies
+            line += dependencies
         self._line(' '.join(line))
         if commands is not None:
-          for command in commands:
-            self._command(command)
+            for command in commands:
+                self._command(command)
 
     def _command(self, command):
         self._line('@' + command, indent=1)
@@ -61,9 +61,10 @@ class Writer(object):
 
 def remove_actions(actions_to_remove, container):
     for action in actions_to_remove:
-      if action not in container:
-        critical_error('Action "%s" missing!', action)
-      container.remove(action)
+        if action not in container:
+            critical_error('Action "%s" missing!', action)
+        container.remove(action)
+
 
 def generate(command_call, ninja_targets, actions, settings, output_dir):
     remove_actions(['ninja', 'makefile', 'doxyfile', 'targets'], actions)

@@ -47,7 +47,7 @@ def init_settings_file(filepath):
     for key, value in varlist.items():
         template = re.sub(r'(%%%s%%)' % key, value, template)
 
-    with open(filepath, 'w+') as  fd:
+    with open(filepath, 'w+') as fd:
         fd.write(template)
 
 
@@ -58,7 +58,7 @@ def init_hello_world():
     critical_error_if_file_exists(targets_filepath)
     util.mkdir_p(os.path.dirname(targets_filepath))
 
-    with open(targets_filepath, 'w+') as  fd:
+    with open(targets_filepath, 'w+') as fd:
         fd.write(util.get_resource('defaults/targets.json'))
-    with open(helloworld_filepath, 'w+') as  fd:
+    with open(helloworld_filepath, 'w+') as fd:
         fd.write(util.get_resource('defaults/hello_world.cpp'))

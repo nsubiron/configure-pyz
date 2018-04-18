@@ -46,7 +46,7 @@ class Settings(object):
     def get(key):
         if key not in Settings.__DATA:
             if key in Settings.__DATA['variables']:
-              return Settings.__DATA['variables'][key]
+                return Settings.__DATA['variables'][key]
             critical_error('Key "%s" not found on settings file', key)
         return Settings.__DATA[key]
 
@@ -111,7 +111,8 @@ class Target(object):
     def _expand(self, files):
         for key in ['sources', 'headers', 'embedded_data']:
             self.raw[key] = Path.expand_patterns(self.raw[key], self.path)
-        used = lambda x: x in self.raw['sources'] or x in self.raw['headers'] or x in self.raw['embedded_data']
+
+        def used(x): return x in self.raw['sources'] or x in self.raw['headers'] or x in self.raw['embedded_data']
         files = [Path.join(self.path, x) for x in files]
         self.raw['unused'] = [x for x in files if not used(x)]
 
@@ -125,7 +126,8 @@ class Configuration(object):
         self.name = data['name']
         self.cflags = Compiler.get_compiler_flags(data)
         self.lflags = Compiler.get_linker_flags(data)
-        getdir = lambda key: data.get(key, '$buildir/%s_%s' % (key, self.name))
+
+        def getdir(key): return data.get(key, '$buildir/%s_%s' % (key, self.name))
         self.bin = getdir('bin')
         self.lib = getdir('lib')
         self.obj = getdir('obj')
@@ -158,6 +160,7 @@ class Compiler(object):
     @staticmethod
     def get_linker_flags(data):
         return ' '.join(data.get('lflags', '').split())
+
 
 class HelpGatherer(object):
     def __init__(self, argparser):
@@ -255,16 +258,17 @@ def main():
     logging.basicConfig(format='%(levelname)s: %(message)s', level=loglevel)
 
     try:
-      builtin_open = __builtin__.open
-      def open_hook(*args, **kwargs):
-          logging.debug('Open file: %s', args[0])
-          try:
-              return builtin_open(*args, **kwargs)
-          except Exception as exception:
-              critical_error(exception)
-      __builtin__.open = open_hook
+        builtin_open = __builtin__.open
+
+        def open_hook(*args, **kwargs):
+            logging.debug('Open file: %s', args[0])
+            try:
+                return builtin_open(*args, **kwargs)
+            except Exception as exception:
+                critical_error(exception)
+        __builtin__.open = open_hook
     except Exception as exception:
-        logging.warning('Hook to open failed: %s', exception)
+        critical_error('Hook to "open" failed: %s', exception)
 
     if args.init_settings_file or args.init_hello_world:
         print_out('Generate %s.' % args.settings_file)

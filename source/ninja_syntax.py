@@ -9,8 +9,10 @@ use Python.
 
 import textwrap
 
+
 def escape_path(word):
     return word.replace('$ ', '$$ ').replace(' ', '$ ').replace(':', '$:')
+
 
 class Writer(object):
     def __init__(self, output, width=78):
@@ -117,7 +119,7 @@ class Writer(object):
             while True:
                 space = text.rfind(' ', 0, space)
                 if (space < 0 or
-                    self._count_dollars_before_index(text, space) % 2 == 0):
+                        self._count_dollars_before_index(text, space) % 2 == 0):
                     break
 
             if space < 0:
@@ -126,17 +128,17 @@ class Writer(object):
                 while True:
                     space = text.find(' ', space + 1)
                     if (space < 0 or
-                        self._count_dollars_before_index(text, space) % 2 == 0):
+                            self._count_dollars_before_index(text, space) % 2 == 0):
                         break
             if space < 0:
                 # Give up on breaking.
                 break
 
             self.output.write(leading_space + text[0:space] + ' $\n')
-            text = text[space+1:]
+            text = text[space + 1:]
 
             # Subsequent lines are continuations, so indent them.
-            leading_space = '  ' * (indent+2)
+            leading_space = '  ' * (indent + 2)
 
         self.output.write(leading_space + text + '\n')
 
